@@ -18,9 +18,11 @@ def main():
 
     # for j in tqdm(range(2,sub_dataset_num + 1)):
     for subdir in os.listdir(dataset_dir):
-        posefile = dataset_dir + subdir + "/optimized_poses.txt"
-        transfile = dataset_dir + subdir + "/trans2dataset1.txt"
-        scandir = dataset_dir + subdir + "/Scans/"
+        if "DS_Store" in subdir:
+            continue
+        posefile = dataset_dir + "/" + subdir + "/optimized_poses.txt"
+        transfile = dataset_dir + "/" + subdir + "/trans2dataset1.txt"
+        scandir = dataset_dir + "/" + subdir + "/Scans/"
         df = pd.read_csv(posefile, " ",header=None)
 
         tr_df = pd.read_csv(transfile, " ", header=[0])
@@ -34,6 +36,8 @@ def main():
         keys = len(df)
         p_loads = np.array([[]])
         for i in tqdm(range(0,keys)):
+            if not (i % 10  == 0):
+                continue
             kv = df.iloc[i]
             T = np.array([[kv["r11"], kv["r12"], kv["r13"], kv["t1"]],
                           [kv["r21"], kv["r22"], kv["r23"], kv["t2"]],
@@ -43,7 +47,8 @@ def main():
 
             pcd_file = scandir + str(i).zfill(6) + ".pcd"
             pcd = o3d.io.read_point_cloud(pcd_file)
-            pcd = voxel_down_sample(pcd, 0.4)
+            #pcd = voxel_down_sample(pcd, 0.4)
+            pcd = voxel_down_sample(pcd, 1.0)
             pcd_t = pcd.transform(T)
             p_t_load = np.asarray(pcd_t.points)
             if i == 0:
@@ -54,7 +59,8 @@ def main():
         pcd_sum = o3d.geometry.PointCloud()
         pcd_sum.points = o3d.utility.Vector3dVector(p_loads)
         pcd_sum = voxel_down_sample(pcd_sum, 0.4)
-        o3d.io.write_point_cloud("../data/" + dataset_dir + ".pcd",pcd_sum)
+        # o3d.io.write_point_cloud("../data/" + dataset_dir + ".pcd",pcd_sum)
+        o3d.io.write_point_cloud(subdir+ ".pcd",pcd_sum)
     return 0
 
 if __name__ == '__main__':
