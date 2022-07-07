@@ -26,7 +26,7 @@ def g2o_to_traj(values, is3D):
     return PoseTrajectory3D(poses_se3 = traj,
                             timestamps = np.array(range(len(values.keys()))).astype(np.float64))
 
-def g2o_to_o3d(graph, traj, odom_color=[0,0,1], lc_color=[1,0,0]):
+def g2o_to_o3d(graph, traj, odom_color=[0,0,1], lc_color=[1,0,0], remove_outlier_lc=True):
     """
     An o3d LineSet takes as argument `points` and `lines`
     `points`: a list of 3D points (as Vector3dVector)
@@ -58,10 +58,14 @@ def g2o_to_o3d(graph, traj, odom_color=[0,0,1], lc_color=[1,0,0]):
         keys = factor.keys()
         idx1 = keys[0] #all_keys.index(keys[0])
         idx2 = keys[1] #all_keys.index(keys[1])
-        lines.append([idx1, idx2])
         if abs(idx2 - idx1) > 1:
-            colors.append(lc_color)
+            if remove_outlier_lc:
+                delta = np.array(points[idx1]) - np.array(points[idx2])
+                if np.linalg.norm(delta) < 50:
+                    lines.append([idx1, idx2])
+                    colors.append(lc_color)
         else:
+            lines.append([idx1, idx2])
             colors.append(odom_color)
         # t1 = values.atPose3(keys[0]).translation()
         # t2 = values.atPose3(keys[1]).translation()
